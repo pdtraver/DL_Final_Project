@@ -2,7 +2,7 @@
 Deep Learning (NYU) Final Project \
 \
 Current Plan (4/9/24 10:54AM): \
-    - Get skeleton code for RAFT (by 4/10) \
+    * - Get skeleton code for RAFT (by 4/10) \
     - Train RAFT on pairs of labeled data in train set (by 4/12) \
         - Split train set into train_train & train_val \
         - Treat each video in train_train as mini-batch of 21 pairs of images \
