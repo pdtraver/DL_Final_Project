@@ -14,4 +14,4 @@ Current Plan (4/9/24 10:54AM): \
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Train on ground truth mask and prediction mask IoU \
 \
 Dataset stored at /scratch/pdt9929/DL_Final_Project/dataset \
-    - Let me know if permissions aren't set right
+    &nbsp;&nbsp;&nbsp;&nbsp;- Let me know if permissions aren't set right
