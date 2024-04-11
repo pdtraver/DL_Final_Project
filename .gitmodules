@@ -1,0 +1,6 @@
+[submodule "SimVP"]
+	path = SimVP
+	url = https://github.com/A4Bio/SimVP.git
+[submodule "OpenSTL"]
+	path = OpenSTL
+	url = https://github.com/chengtan9907/OpenSTL.git
