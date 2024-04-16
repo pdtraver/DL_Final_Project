@@ -1,5 +1,5 @@
 # DL_Final_Project
-Deep Learning (NYU) Final Project \
+Deep Learning (NYU) Final Project 
 
 Updated Plan (4/16/24 12:30PM)\
 &nbsp;&nbsp;&nbsp;&nbsp;- connect SimVP with Slot attention \
@@ -16,7 +16,7 @@ Next steps\
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-Train Slot Attention on our train set -- use it to predict masks on unlabeled data \
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-Use slot attention to predict masks of predicted frames -- this is baseline solution for task (expected to be bad) \
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-Work on training SimVP on mask data -- why is the loss so high? is the data imported correctly? \
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-Look into other mask predictors if Slot Attention proves too finicky -- Mask RCNN is next choice \
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-Look into other mask predictors if Slot Attention proves too finicky -- Mask RCNN is next choice 
 
 
 \
