@@ -61,7 +61,7 @@ def process_folder(folder_path, pre_slen=11, aft_slen=11):
     # stack video frames from each folder
     video_data = np.stack(videos).transpose(0, 1, 4, 2, 3)
     if folder_path != 'hidden':
-        mask_data = np.stack(global_masks)
+        mask_data = np.stack(global_masks).transpose(0, 2, 1, 3, 4)
     else:
         mask_data = None
 
@@ -76,18 +76,15 @@ def process_folder(folder_path, pre_slen=11, aft_slen=11):
     else:
         return video_data, None, None, None
 
-dataset = {}
 folders = ['train', 'val', 'hidden']
 for folder in tqdm(folders):
-    data_x, data_y, mask_x, mask_y = process_folder(folder, pre_slen=pre_seq_length, aft_slen=aft_seq_length)
+    dataset = {}
+    data_x, data_y, mask_x, mask_y = process_folder(folder, pre_slen=11, aft_slen=11)
+    print(np.shape(data_x), np.shape(data_y), np.shape(mask_x), np.shape(mask_y))
     dataset['X_' + folder], dataset['Y_' + folder],  dataset['X_' + folder + '_mask'], dataset['Y_' + folder + '_mask'] = data_x, data_y, mask_x, mask_y
+    with open(folder + '.pkl', 'wb') as f:
+        pickle.dump(dataset, f)
 
-# save as a pkl file
-with open('dataset.pkl', 'wb') as f:
-    pickle.dump(dataset, f)
-
-train_x, train_y = dataset['X_train'], dataset['Y_train']
-print(train_x.shape)
 # the shape is B x T x C x H x W
 # B: the number of samples
 # T: the number of frames in each sample
