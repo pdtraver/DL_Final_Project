@@ -1,3 +1,9 @@
 [submodule "OpenSTL"]
 	path = OpenSTL
 	url = https://github.com/chengtan9907/OpenSTL.git
+[submodule "slot-attention-video"]
+	path = slot-attention-video
+	url = https://github.com/google-research/slot-attention-video.git
+[submodule "pytorch-mask-rcnn"]
+	path = pytorch-mask-rcnn
+	url = https://github.com/multimodallearning/pytorch-mask-rcnn.git

@@ -33,5 +33,5 @@ def run_exp(train, val, test, train_config, model_config):
     
 
 # run for images & masks
-#run_exp(dataloader_train, dataloader_val, dataloader_test, custom_training_config, custom_model_config)
-run_exp(dataloader_train_mask, dataloader_val_mask, dataloader_test_mask, custom_training_config_mask, custom_model_config_mask)
+run_exp(dataloader_train, dataloader_val, dataloader_test, custom_training_config, custom_model_config)
+#run_exp(dataloader_train_mask, dataloader_val_mask, dataloader_test_mask, custom_training_config_mask, custom_model_config_mask)

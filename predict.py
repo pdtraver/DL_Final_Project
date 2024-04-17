@@ -8,6 +8,7 @@ import numpy as np
 import torch
 import os
 from tqdm import tqdm
+from dataset.generateImages import generateImages
         
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
@@ -33,7 +34,7 @@ for attribute in default_values.keys():
         config[attribute] = default_values[attribute]
 
 model = method_maps['simvp'](save_dir=save_dir, **config)
-model.load_state_dict(torch.load('work_dirs/image_exp/checkpoints/best.ckpt', map_location=device)['state_dict'])
+model.load_state_dict(torch.load('work_dirs/image_exp/checkpoints/best-epoch=05-val_loss=0.002.ckpt', map_location=device)['state_dict'])
 model.eval()
 model.to(device)
 
@@ -79,7 +80,6 @@ for i in tqdm(range(int(np.floor(np.ceil(hidden_data.shape[0]/batch_size))/2))):
 hidden_predictions2 = predictions[1:].cpu().detach().numpy()
 with open('dataset/hidden_predictions2.npy', 'wb') as f:
     np.save(f, hidden_predictions2)
-
-
     
-    
+# Create images from predictions
+generateImages(hidden_predictions, hidden_predictions2)

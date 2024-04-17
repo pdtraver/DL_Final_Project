@@ -1,9 +1,9 @@
 custom_training_config = {
     'pre_seq_length': 11,
     'aft_seq_length': 11,
-    'total_length': 2,
-    'batch_size': 1,
-    'val_batch_size': 1,
+    'total_length': 22,
+    'batch_size': 16,
+    'val_batch_size': 16,
     'epoch': 100,
     'lr': 0.001,   
     'metrics': ['mse', 'mae'],
