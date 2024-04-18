@@ -7,3 +7,15 @@
 [submodule "pytorch-mask-rcnn"]
 	path = pytorch-mask-rcnn
 	url = https://github.com/multimodallearning/pytorch-mask-rcnn.git
+[submodule "google-research"]
+	path = google-research
+	url = https://github.com/google-research/google-research.git
+[submodule "MESH"]
+	path = MESH
+	url = https://github.com/davzha/MESH.git
+[submodule "SAVi-pytorch"]
+	path = SAVi-pytorch
+	url = https://github.com/junkeun-yi/SAVi-pytorch.git
+[submodule "SAVi-PyTorch"]
+	path = SAVi-PyTorch
+	url = https://github.com/Genera1Z/SAVi-PyTorch.git
