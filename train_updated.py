@@ -24,13 +24,15 @@ import tensorflow as tf
 import os
 import numpy as np
 
-import slot_attention.data as data_utils
-import slot_attention.model as model_utils
-import slot_attention.utils as utils
+import data as data_utils
+import model as model_utils
+import utils as utils
 
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("model_dir", "/scratch/kmk9461/google-research/slot_attention/object_discovery/",
+# flags.DEFINE_string("model_dir", "/scratch/kmk9461/google-research/slot_attention/object_discovery/",
+#                     "Where to save the checkpoints.")
+flags.DEFINE_string("model_dir", "/scratch/pdt9929/google-research/slot_attention/object_discovery/",
                     "Where to save the checkpoints.")
 flags.DEFINE_integer("seed", 0, "Random seed.")
 flags.DEFINE_integer("batch_size", 64, "Batch size for the model.")
@@ -144,7 +146,8 @@ def main(argv):
   #data_iterator = data_utils.build_clevr_iterator(
   #    batch_size, split="train", resolution=resolution, shuffle=True,
   #    max_n_objects=6, get_properties=False, apply_crop=True)
-  data_iterator = LabelDataset('/scratch/kmk9461/google-research/slot_attention/dataset/train', batch_size)
+  #data_iterator = LabelDataset('/scratch/kmk9461/google-research/slot_attention/dataset/train', batch_size)
+  data_iterator = LabelDataset('/scratch/pdt9929/DL_Final_Project/dataset/train', batch_size)
   
   optimizer = tf.keras.optimizers.Adam(base_learning_rate, epsilon=1e-08)
 
