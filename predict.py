@@ -8,6 +8,7 @@ import numpy as np
 import torch
 import os
 from tqdm import tqdm
+from dataset.generateImages import generateImages
         
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
@@ -33,7 +34,8 @@ for attribute in default_values.keys():
         config[attribute] = default_values[attribute]
 
 model = method_maps['simvp'](save_dir=save_dir, **config)
-model.load_state_dict(torch.load('work_dirs/image_exp/checkpoints/best.ckpt', map_location=device)['state_dict'])
+ckpt = torch.load('/scratch/pdt9929/DL_Final_Project/work_dirs/mask_exp/checkpoints/best.ckpt')
+model.load_state_dict(ckpt['state_dict'])
 model.eval()
 model.to(device)
 
@@ -57,7 +59,7 @@ for i in tqdm(range(int(np.ceil(np.ceil(hidden_data.shape[0]/batch_size))/2))):
     last = i
     
 hidden_predictions = predictions[1:].cpu().detach().numpy()
-with open('dataset/hidden_predictions.npy', 'wb') as f:
+with open('dataset/hidden_predictions_masks.npy', 'wb') as f:
     np.save(f, hidden_predictions)
     
 predictions2 = torch.zeros((1, 11, 3, 160, 240))
@@ -77,9 +79,8 @@ for i in tqdm(range(int(np.floor(np.ceil(hidden_data.shape[0]/batch_size))/2))):
     torch.cuda.empty_cache()
     
 hidden_predictions2 = predictions[1:].cpu().detach().numpy()
-with open('dataset/hidden_predictions2.npy', 'wb') as f:
+with open('dataset/hidden_predictions_masks2.npy', 'wb') as f:
     np.save(f, hidden_predictions2)
-
-
     
-    
+# Create images from predictions
+generateImages(hidden_predictions, hidden_predictions2)
