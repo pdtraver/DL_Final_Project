@@ -7,7 +7,7 @@ from tqdm import tqdm
 pre_seq_length = 10
 aft_seq_length = 20
 
-def sample_frames(video_path, num_frames=20):
+def sample_frames(video_path, num_frames=22):
     # read the video
     video = cv2.VideoCapture(video_path)
     total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))

@@ -35,11 +35,14 @@ def getDataloaders(directory):
     batch_size = 1
 
     train_set = CustomDataset(X=X_train, Y=Y_train)
-    train_set_mask = CustomDataset(X=X_train_mask[:,:11], Y=Y_train_mask[:,11:])
-    val_set = CustomDataset(X=X_val[:499], Y=Y_val[:499])
-    val_set_mask = CustomDataset(X=X_val_mask[:499, :11], Y=Y_val_mask[:499, 11:])
-    test_set = CustomDataset(X=X_val[499:], Y=Y_val[499:])
-    test_set_mask = CustomDataset(X=X_val_mask[499:, :11], Y=Y_val_mask[499:, 11:])
+    print('HERE')
+    print(X_train_mask.shape)
+    print(Y_train_mask.shape)
+    train_set_mask = CustomDataset(X=X_train_mask, Y=Y_train_mask)
+    val_set = CustomDataset(X=X_val, Y=Y_val)
+    val_set_mask = CustomDataset(X=X_val_mask, Y=Y_val_mask)
+    test_set = CustomDataset(X=X_val, Y=Y_val)
+    test_set_mask = CustomDataset(X=X_val_mask, Y=Y_val_mask)
 
     dataloader_train = torch.utils.data.DataLoader(
         train_set, batch_size=batch_size, shuffle=True, pin_memory=True)
