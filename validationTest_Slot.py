@@ -435,21 +435,25 @@ def generateMasks(slot_predictions):
 
 
 ## Measure Jacard distance using provided code
+# Calculate the Jaccard distance between two binary masks.
 def jaccard_distance(mask1, mask2):
-    """
-    Calculate the Jaccard distance between two binary masks.
-    
-    Parameters:
-    - mask1 (np.array): Binary mask of the first image.
-    - mask2 (np.array): Binary mask of the second image.
-    
-    Returns:
-    - float: Jaccard distance between the two masks.
-    """
     intersection = np.logical_and(mask1, mask2)
     union = np.logical_or(mask1, mask2)
     jaccard_index = np.sum(intersection) / np.sum(union)
     jaccard_dist = 1 - jaccard_index
+    return jaccard_dist
+
+# Calculate the Jaccard distance between two binary masks or batches of masks.
+def jaccard_distance_tensorflow(mask1, mask2):
+    intersection = tf.math.logical_and(mask1, mask2)
+    union = tf.math.logical_or(mask1, mask2)
+
+    intersection_sum = tf.math.reduce_sum(tf.cast(intersection, tf.float32), axis=[1, 2, 3])
+    union_sum = tf.math.reduce_sum(tf.cast(union, tf.float32), axis=[1, 2, 3])
+
+    jaccard_index = tf.math.divide_no_nan(intersection_sum, union_sum)
+    jaccard_dist = 1.0 - jaccard_index
+
     return jaccard_dist
 
 ## Main
