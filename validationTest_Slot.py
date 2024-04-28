@@ -15,6 +15,7 @@ from google_research.slot_attention.updated_set_prediction_scripts import model 
 from google_research.slot_attention import utils
 from PIL import Image
 from math import tan, pi, cos, sin
+import cv2
 
 ## Load validation set
 def openValSet(directory):
@@ -55,7 +56,7 @@ def getSlotFlags(batch_size = 512):
     return FLAGS
     
 ## Generate Slot Data Iterator
-def buildLabelDataset(version_str="21.0.0", preds_location='/scratch/pdt9929/DL_Final_Project/dataset/val/'):
+def buildLabelDataset(version_str="11.0.0", preds_location='/scratch/pdt9929/DL_Final_Project/dataset/val_predictions/'):
     class LabelDataset(tfds.core.GeneratorBasedBuilder):
         VERSION = tfds.core.Version(version_str)
         RELEASE_NOTES = {version_str : "Val preds release."}
@@ -237,9 +238,9 @@ def buildLabelDataset(version_str="21.0.0", preds_location='/scratch/pdt9929/DL_
     custom_dataset_file.download_and_prepare(download_dir = path)
 
 ## Get Slot Model & Predict masks
-def getSlotModel(FLAGS, val_folder = '/scratch/pdt9929/DL_Final_Project/dataset/val/',
+def getSlotModel(FLAGS, val_folder = '/scratch/pdt9929/DL_Final_Project/dataset/val_predictions/',
                  checkpoint_path = '/scratch/pdt9929/google-research/slot_attention/weights.ckpt',
-                 save_dir = '/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/label_dataset/val_real_slot_preds.npy'):
+                 save_dir = '/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/label_dataset/val_slot_preds.npy'):
     # Hyperparameters of the model.
     FLAGS(sys.argv)
     batch_size = FLAGS.batch_size
@@ -263,27 +264,175 @@ def getSlotModel(FLAGS, val_folder = '/scratch/pdt9929/DL_Final_Project/dataset/
     
     model.load_weights(checkpoint_path)
     
-    slot_predictions = {'mask': [], 'file_name': []}
+    slot_predictions = {}
     
     batches = int(np.ceil(len(os.listdir(val_folder))/batch_size))
     
     for _ in tqdm(range(batches), leave=False):
         batch = next(data_iterator)
         preds = model(batch["image"], training=True)
-        slot_predictions['mask'] += [preds]
-        slot_predictions['file_name'] += [batch['file_name']]
+        for idx, filename in enumerate(batch['file_name']):
+            slot_predictions[tf.get_static_value(filename)] = [preds[idx]]
        
-    print('Shape of slot predictions: ')
-    print(slot_predictions['mask'][0].shape)
-    print(slot_predictions['mask'][0][0][0])
-    print(slot_predictions['file_name'][0][0][0])
-        
+    # print('Shape of slot predictions: ')
+    # print(slot_predictions['mask'][0].shape)
+    # print(slot_predictions['mask'][0][0])
+    # print(slot_predictions['file_name'][0][0])
     with open(save_dir, 'wb') as f:
         np.save(f, np.array(slot_predictions))
         
     return slot_predictions
 
+# Helper function for translation from slot to masks
+def world_to_pixel(world_coords, camera_params, rotation_matrix):
+    # Extract camera parameters
+    camera_position = np.array(camera_params['camera_position'])
+    fov = camera_params['fov']
+    width, height = camera_params['image_resolution']
+    pixel_width = camera_params['camera_sensor_width'] / width
+    pixel_height = camera_params['camera_sensor_height'] / height
+
+    # Calculate the direction vector from the camera position to the 3D point
+    direction = (world_coords - camera_position).astype(np.float64)
+
+    # Normalize the direction vector
+    direction /= np.linalg.norm(direction)
+
+    # Apply the inverse rotation matrix to align with the camera's view
+    inv_rotation_matrix = np.linalg.inv(rotation_matrix)
+    direction = np.dot(inv_rotation_matrix, direction)
+
+    # Project the 3D point onto the 2D image plane
+    # Assuming the camera is looking along the z-axis, ignore the z-component
+    u = direction[0] * fov / 2
+    v = direction[1] * fov / 2
+
+    # Convert from camera coordinates to pixel indices
+    x_index = int((u / pixel_width) + width / 2)
+    y_index = int((v / pixel_height) + height / 2)
+
+    return x_index, y_index
+
+# Default camera params
+def get_camera_params():
+    camera_params = {
+        'fov': 49.9,  # Field of view in degrees
+        'camera_position': [3, 3, 6],  # Camera position (x, y, z)
+        'camera_rotation': [-25, 25, 0],  # Camera rotation in degrees (pitch, roll, yaw)
+        'camera_sensor_width': 36,  # Camera sensor width in mm
+        'camera_sensor_height': 24,  # Camera sensor height in mm
+        'image_resolution': [320, 240]  # Image resolution (width, height)
+    }
+    
+    # Calculate the camera rotation matrix
+    pitch = camera_params['camera_rotation'][0] * np.pi / 180
+    roll = camera_params['camera_rotation'][1] * np.pi / 180
+    yaw = camera_params['camera_rotation'][2] * np.pi / 180
+
+    rotation_matrix = np.array([
+        [np.cos(yaw) * np.cos(pitch), np.cos(yaw) * np.sin(pitch) * np.sin(roll) - np.sin(yaw) * np.cos(roll), np.cos(yaw) * np.sin(pitch) * np.cos(roll) + np.sin(yaw) * np.sin(roll)],
+        [np.sin(yaw) * np.cos(pitch), np.sin(yaw) * np.sin(pitch) * np.sin(roll) + np.cos(yaw) * np.cos(roll), np.sin(yaw) * np.sin(pitch) * np.cos(roll) - np.cos(yaw) * np.sin(roll)],
+        [-np.sin(pitch), np.cos(pitch) * np.sin(roll), np.cos(pitch) * np.cos(roll)]
+    ])
+    
+    return camera_params, rotation_matrix
+
+class ColorMasker:
+    def __init__(self, image):
+        self.image = image
+        self.hsv_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
+        self.color_ranges = {
+            'gray': ((0, 0, 40), (30, 20, 100)),
+            'red': (((0, 100, 100), (10, 255, 255)), ((160, 100, 100), (180, 255, 255))),
+            'blue': ((110, 50, 50), (130, 255, 255)),
+            'green': ((30, 70, 60), (60, 255, 255)),
+            'brown': ((10, 100, 20), (20, 255, 200)),
+            'cyan': ((80, 90, 60), (100, 255, 255)),
+            'purple': ((130, 50, 50), (160, 255, 255)),
+            'yellow': ((25, 100, 100), (30, 255, 255))
+        }
+
+    def separate_objects(self, mask):
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        masks = []
+        for contour in contours:
+            M = cv2.moments(contour)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                temp_mask = np.zeros_like(mask)
+                cv2.drawContours(temp_mask, [contour], -1, 255, thickness=cv2.FILLED)
+                masks.append(temp_mask)
+        return masks
+
+    def get_mask(self, color_code):
+        if color_code not in self.color_ranges:
+            raise ValueError("Invalid color code")
+        
+        ranges = self.color_ranges[color_code]
+        if color_code == 'red':  # Red has two ranges
+            mask1 = cv2.inRange(self.hsv_image, np.array(ranges[0][0], dtype=np.uint8), np.array(ranges[0][1], dtype=np.uint8))
+            mask2 = cv2.inRange(self.hsv_image, np.array(ranges[1][0], dtype=np.uint8), np.array(ranges[1][1], dtype=np.uint8))
+            mask = cv2.bitwise_or(mask1, mask2)
+        else:
+            mask = cv2.inRange(self.hsv_image, np.array(ranges[0], dtype=np.uint8), np.array(ranges[1], dtype=np.uint8))
+        
+        return self.separate_objects(mask)
+        
+    def get_mask_arg(self, mask, predicted_centers):
+        true_indices = np.where(mask)
+        x_mask, y_mask = (int(np.mean(true_indices[0])), int(np.mean(true_indices[1])))
+        
+        # Convert predicted_centers to a numpy array if it's not already one
+        predicted_centers = np.array(predicted_centers)
+        
+        # Calculate the squared Euclidean distances to all predicted centers
+        distances = np.sum((predicted_centers - np.array([x_mask, y_mask]))**2, axis=1)
+
+        # Find the index of the closest center
+        closest_index = np.argmin(distances)
+
+        # Get the closest center coordinates
+        closest_center = predicted_centers[closest_index]
+
+        return closest_center
+
+def process_targets(target):
+    """Unpacks the target into the CLEVR properties."""
+    coords = target[:3]
+    object_size = tf.argmax(target[3:5])
+    material = tf.argmax(target[5:7])
+    shape = tf.argmax(target[7:10])
+    color = tf.argmax(target[10:18])
+    real_obj = target[18]
+    return coords, object_size, material, shape, color, real_obj
+
 ## Transform predicted masks back to normal configuration
+def generateMasks(slot_predictions):
+    camera_params, rotation_matrix = get_camera_params()
+    
+    for filename in slot_predictions:
+        image = cv2.imread(filename.decode('UTF-8'))
+        slots = slot_predictions[filename][0]
+        
+        #Abhisek's masking protocol
+        color_mask = ColorMasker(image)
+        
+        color_masks = {}
+        for color in color_mask.color_ranges.keys():
+            color_masks[color] = color_mask.get_mask(color)
+            print(color_masks[color])
+            
+
+        for slot in slots:
+            coords, object_size, material, shape, color, real_obj = process_targets(slot)
+            
+            pixel_center = world_to_pixel(coords, camera_params, rotation_matrix)
+            
+
+        
+        
+
 
 ## Measure Jacard distance using provided code
 
@@ -299,10 +448,15 @@ def main(build_label_set=True):
         buildLabelDataset()
         print('>'*35 + ' Label Dataset Loaded ' + '<'*35)
         
-    # Predict masks
-    print('>'*35 + ' Predicting Masks for Last 11 Frames with Slot Attention ' + '<'*35)
+    # Predict slots
+    print('>'*35 + ' Predicting Slots for Last Frame ' + '<'*35)
     slot_predictions = getSlotModel(FLAGS)
     print('>'*35 + ' Slots Predicted ' + '<'*35)
+    
+    # Generate masks from slots
+    print('>'*35 + ' Generating Masks for Last Frame ' + '<'*35)
+    slot_predictions = generateMasks(slot_predictions)
+    print('>'*35 + ' Masks Generated ' + '<'*35)
 
 if __name__ == "__main__":
     main(build_label_set=True)
