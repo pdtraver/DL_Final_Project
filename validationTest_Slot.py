@@ -55,15 +55,15 @@ def getSlotFlags(batch_size = 512):
     return FLAGS
     
 ## Generate Slot Data Iterator
-def buildLabelDataset(version_str="10.0.0", preds_location='/scratch/pdt9929/DL_Final_Project/dataset/val_predictions/'):
+def buildLabelDataset(version_str="21.0.0", preds_location='/scratch/pdt9929/DL_Final_Project/dataset/val/'):
     class LabelDataset(tfds.core.GeneratorBasedBuilder):
         VERSION = tfds.core.Version(version_str)
         RELEASE_NOTES = {version_str : "Val preds release."}
         SUPPORTED_VERSIONS = [tfds.core.Version(version_str)]
 
         def _get_num_samples(self):
-            # 11 Predicted frames
-            self.num_samples = 11 * len(self.video_paths)
+            # Only last predicted frames
+            self.num_samples = 1 * len(self.video_paths)
 
         def _init_camera_params(self):
             # Default camera parameters for the CLEVR dataset
@@ -153,6 +153,7 @@ def buildLabelDataset(version_str="10.0.0", preds_location='/scratch/pdt9929/DL_
                 unique_mask = mask == unique_mask_code
 
                 true_indices = np.where(unique_mask)
+                # centered mask index
                 x_mask, y_mask = (int(np.mean(true_indices[0])), int(np.mean(true_indices[1])))
 
                 mask_object = {}
@@ -184,15 +185,15 @@ def buildLabelDataset(version_str="10.0.0", preds_location='/scratch/pdt9929/DL_
             # mask_object['code'] = mask_code
 
             mask_object_list = [{attr: mask_object[attr][obj] for attr in attrs} for obj in range(len(mask_material))]
-
+            print(mask_object_list)
             return mask_object_list
 
         def _generate_examples(self):
             batch_data = []
             for path in self.video_paths:
-                ## 11 predicted frames
-                for i in range(11):
-                    image_path = os.path.join(path, f'image_{i+11}.png')
+                ## Only last predicted frames (for now)
+                for i in range(1):
+                    image_path = os.path.join(path, f'image_{i+21}.png')
                     image_data = tf.io.read_file(image_path)
                     image = self._process_image(image_data)
                     record = {'image': image_path, 'file_name': image_path}
@@ -236,8 +237,9 @@ def buildLabelDataset(version_str="10.0.0", preds_location='/scratch/pdt9929/DL_
     custom_dataset_file.download_and_prepare(download_dir = path)
 
 ## Get Slot Model & Predict masks
-def getSlotModel(FLAGS, checkpoint_path = '/scratch/pdt9929/google-research/slot_attention/weights.ckpt',
-                 save_dir = '/scratch/pdt9929/google_research/slot_attention/label_dataset/val_slot_preds.npy'):
+def getSlotModel(FLAGS, val_folder = '/scratch/pdt9929/DL_Final_Project/dataset/val/',
+                 checkpoint_path = '/scratch/pdt9929/google-research/slot_attention/weights.ckpt',
+                 save_dir = '/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/label_dataset/val_real_slot_preds.npy'):
     # Hyperparameters of the model.
     FLAGS(sys.argv)
     batch_size = FLAGS.batch_size
@@ -261,18 +263,23 @@ def getSlotModel(FLAGS, checkpoint_path = '/scratch/pdt9929/google-research/slot
     
     model.load_weights(checkpoint_path)
     
-    slot_predictions = {}
+    slot_predictions = {'mask': [], 'file_name': []}
     
-    for _ in tqdm(data_iterator, leave=False):
+    batches = int(np.ceil(len(os.listdir(val_folder))/batch_size))
+    
+    for _ in tqdm(range(batches), leave=False):
         batch = next(data_iterator)
         preds = model(batch["image"], training=True)
-        slot_predictions['mask'] = preds 
-        slot_predictions['file_name'] = batch['file_name']
+        slot_predictions['mask'] += [preds]
+        slot_predictions['file_name'] += [batch['file_name']]
+       
+    print('Shape of slot predictions: ')
+    print(slot_predictions['mask'][0].shape)
+    print(slot_predictions['mask'][0][0][0])
+    print(slot_predictions['file_name'][0][0][0])
         
     with open(save_dir, 'wb') as f:
         np.save(f, np.array(slot_predictions))
-        
-    print('Shape of Slot Predictions: ' + slot_predictions['mask'].shape)
         
     return slot_predictions
 
