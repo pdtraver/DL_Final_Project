@@ -520,9 +520,32 @@ def generateMasks(slot_predictions, class_dict):
                         masks_to_sum.append(proposal)
             
 ## Measure Jacard distance using provided code
+<<<<<<< HEAD
 def computeJaccard(predictions, ground_truth):
     jaccard = torchmetrics.JaccardIndex(task="multiclass", num_classes=49)
     return jaccard(predictions, ground_truth)
+=======
+# Calculate the Jaccard distance between two binary masks.
+def jaccard_distance(mask1, mask2):
+    intersection = np.logical_and(mask1, mask2)
+    union = np.logical_or(mask1, mask2)
+    jaccard_index = np.sum(intersection) / np.sum(union)
+    jaccard_dist = 1 - jaccard_index
+    return jaccard_dist
+
+# Calculate the Jaccard distance between two binary masks or batches of masks.
+def jaccard_distance_tensorflow(mask1, mask2):
+    intersection = tf.math.logical_and(mask1, mask2)
+    union = tf.math.logical_or(mask1, mask2)
+
+    intersection_sum = tf.math.reduce_sum(tf.cast(intersection, tf.float32), axis=[1, 2, 3])
+    union_sum = tf.math.reduce_sum(tf.cast(union, tf.float32), axis=[1, 2, 3])
+
+    jaccard_index = tf.math.divide_no_nan(intersection_sum, union_sum)
+    jaccard_dist = 1.0 - jaccard_index
+
+    return jaccard_dist
+>>>>>>> 3b47e042bad93d4297a41270e70f0d5304b61fe1
 
 ## Main
 def main(build_label_set=True):
