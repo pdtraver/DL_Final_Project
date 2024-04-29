@@ -30,7 +30,7 @@ def openValSet(directory):
     return X_val, Y_val, X_val_mask, Y_val_mask
 
 ## Get Slot Flags
-def getSlotFlags(batch_size = 512):    
+def getSetFlags(batch_size = 512):    
     model_type = 'set'
 
     FLAGS = flags.FLAGS
@@ -265,12 +265,10 @@ def buildLabelDataset(version_str="11.0.0", preds_location='/scratch/pdt9929/DL_
 ## Get Slot Model & Predict masks
 ## Change val_predictions to unlabeled if you want the unlabeled set !!
 ## And val_slot_preds to unlabeled set !!
-def getSlotModel(FLAGS, object_FLAGS
+def getSetPreds(FLAGS,
                  val_folder = '/scratch/pdt9929/DL_Final_Project/dataset/val_predictions/',
                  slot_checkpoint_path = '/scratch/pdt9929/google-research/slot_attention/weights.ckpt',
-                 object_checkpoint_path = '/scratch/pdt9929/google-research/slot_attention/weights.ckpt',
                  slot_save_dir = '/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/label_dataset/val_slot_preds.npy',
-                 object_save_dir = '/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/label_dataset/val_object_preds.npy',
                  ):
     # Hyperparameters of the model.
     FLAGS(sys.argv)
@@ -284,7 +282,6 @@ def getSlotModel(FLAGS, object_FLAGS
     decay_steps = FLAGS.decay_steps
     tf.random.set_seed(FLAGS.seed)
     resolution = (160, 240)
-    object_batch_size = object_FLAGS.batch_size
     
     # Get slot predictions
     slot_data_iterator = data_utils.build_clevr_iterator(
@@ -309,22 +306,42 @@ def getSlotModel(FLAGS, object_FLAGS
             
     with open(slot_save_dir, 'wb') as f:
         np.save(f, np.array(slot_predictions))
-            
+        
+    return slot_predictions
+
+def getObjectPreds(FLAGS,
+                 val_folder = '/scratch/pdt9929/DL_Final_Project/dataset/val_predictions/',
+                 object_checkpoint_path = '/scratch/pdt9929/google-research/slot_attention/weights.ckpt',
+                 object_save_dir = '/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/label_dataset/val_object_preds.npy',
+                 ):
+    # Hyperparameters of the model.
+    FLAGS(sys.argv)
+    batch_size = FLAGS.batch_size
+    num_slots = FLAGS.num_slots
+    num_iterations = FLAGS.num_iterations
+    base_learning_rate = FLAGS.learning_rate
+    num_train_steps = FLAGS.num_train_steps
+    warmup_steps = FLAGS.warmup_steps
+    decay_rate = FLAGS.decay_rate
+    decay_steps = FLAGS.decay_steps
+    tf.random.set_seed(FLAGS.seed)
+    resolution = (160, 240)
+    
     # Get Object predictions       
     object_data_iterator = data_utils.build_clevr_iterator(
         # test split == unlabeled data in our repo
-        object_batch_size, split="prediction", resolution=resolution, shuffle=False,
+        batch_size, split="prediction", resolution=resolution, shuffle=False,
         max_n_objects=10, get_properties=False, apply_crop=False, unlabeled=True)
-    
-    object_model = model_utils.build_model(resolution, object_batch_size, num_slots,
+
+    object_model = model_utils.build_model(resolution, batch_size, num_slots,
                                     num_iterations, model_type="object_discovery")
-    
+
     object_model.load_weights(object_checkpoint_path)
-    
+
     object_predictions = {}
-    
-    object_batches = int(np.ceil(len(os.listdir(val_folder))/object_batch_size))
-    
+
+    object_batches = int(np.ceil(len(os.listdir(val_folder))/batch_size))
+
     for _ in tqdm(range(object_batches), leave=False):
         batch = next(object_data_iterator)
         object_preds = object_model(batch["image"], training=True)
@@ -336,11 +353,11 @@ def getSlotModel(FLAGS, object_FLAGS
                 'mask': masks[idx],
                 'slots': slots[idx]
             }
-    
-    with open(objct_save_dir, 'wb') as f:
+
+    with open(object_save_dir, 'wb') as f:
         np.save(f, np.array(object_predictions))
         
-    return slot_predictions, object_predictions
+    return object_predictions
 
 def process_targets(target):
     """Unpacks the target into the CLEVR properties."""
@@ -492,25 +509,43 @@ def jaccard_distance_tensorflow(mask1, mask2):
 
 ## Main
 def main(build_label_set=True):
-    # get slot flags, build label dataset & predict masks
-    FLAGS = getSlotFlags()
-    object_FLAGS = getObjectFlags()
-    print('>'*35 + ' Slot & Object Flags Loaded ' + '<'*35)
-    
     # Build label dataset
     if build_label_set == True:
         print('>'*35 + ' Building Validation Label Dataset Version=10.0.0 ' + '<'*35)
         buildLabelDataset()
         print('>'*35 + ' Label Dataset Loaded ' + '<'*35)
         
-    # Predict slots
-    print('>'*35 + ' Predicting Slots for Last Frame ' + '<'*35)
-    slot_predictions, object_predictions = getSlotModel(FLAGS, object_FLAGS)
-    print('>'*35 + ' Slots Predicted ' + '<'*35)
-    
     # Get code dictionary
     class_dict = getClassDict()
     print('>'*35 + ' Class Dict Loaded ' + '<'*35)
+    
+    # get slot flags, build label dataset & predict masks
+    FLAGS = getSetFlags()
+    #object_FLAGS = getObjectFlags()
+    print('>'*35 + ' Slot Flags Loaded ' + '<'*35)
+    
+    # Predict slots
+    print('>'*35 + ' Predicting Sets for Last Frame ' + '<'*35)
+    slot_predictions = getSetPreds(FLAGS)
+    print('>'*35 + ' Sets Predicted ' + '<'*35)
+    
+    def del_all_flags(FLAGS):
+        flags_dict = FLAGS._flags()
+        keys_list = [keys for keys in flags_dict]
+        for keys in keys_list:
+            FLAGS.__delattr__(keys)
+            
+    del_all_flags(FLAGS)
+    
+    # get slot flags, build label dataset & predict masks
+    FLAGS = getObjectFlags()
+    #object_FLAGS = getObjectFlags()
+    print('>'*35 + 'Object Flags Loaded ' + '<'*35)
+        
+    # Predict slots
+    print('>'*35 + ' Predicting Objects for Last Frame ' + '<'*35)
+    object_predictions = getObjectPreds(FLAGS)
+    print('>'*35 + ' Objects Predicted ' + '<'*35)
     
     # Generate masks from slots
     print('>'*35 + ' Generating Masks for Last Frame ' + '<'*35)
