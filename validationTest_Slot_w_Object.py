@@ -36,10 +36,10 @@ def getSlotFlags(batch_size = 512):
     FLAGS = flags.FLAGS
     ## UNCOMMENT FOR CORRECT FILE LOCATION
     if model_type == 'object':
-        flags.DEFINE_string("model_dir", "/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/object_discovery/",
+        flags.DEFINE_string("model_dir", "/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/object_discovery/",
                             "Where to save the checkpoints.")
     elif model_type == 'set':
-        flags.DEFINE_string("model_dir", "/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/set_prediction/",
+        flags.DEFINE_string("model_dir", "/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/set_prediction/",
                             "Where to save the checkpoints.")
     flags.DEFINE_integer("seed", 0, "Random seed.")
     flags.DEFINE_integer("batch_size", batch_size, "Batch size for the model.")
@@ -61,10 +61,10 @@ def getObjectFlags(batch_size = 32):
     FLAGS = flags.FLAGS
     ## UNCOMMENT FOR CORRECT FILE LOCATION
     if model_type == 'object':
-        flags.DEFINE_string("model_dir", "/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/object_discovery/",
+        flags.DEFINE_string("model_dir", "/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/object_discovery/",
                             "Where to save the checkpoints.")
     elif model_type == 'set':
-        flags.DEFINE_string("model_dir", "/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/set_prediction/",
+        flags.DEFINE_string("model_dir", "/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/set_prediction/",
                             "Where to save the checkpoints.")
     flags.DEFINE_integer("seed", 0, "Random seed.")
     flags.DEFINE_integer("batch_size", batch_size, "Batch size for the model.")
@@ -81,7 +81,7 @@ def getObjectFlags(batch_size = 32):
     return FLAGS
    
 ## Generate Slot Data Iterator
-def buildLabelDataset(version_str="11.0.0", preds_location='/scratch/pdt9929/DL_Final_Project/dataset/val_predictions/'):
+def buildLabelDataset(version_str="11.0.0", preds_location='/scratch/kmk9461/DL_Final_Project/dataset/val_predictions/'):
     class LabelDataset(tfds.core.GeneratorBasedBuilder):
         VERSION = tfds.core.Version(version_str)
         RELEASE_NOTES = {version_str : "Val preds release."}
@@ -256,7 +256,7 @@ def buildLabelDataset(version_str="11.0.0", preds_location='/scratch/pdt9929/DL_
             return dataset_info
         
     # Generate label dataset
-    path = '/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/'
+    path = '/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/'
     os.environ['TFDS_DATA_DIR'] = path
     os.environ['TFDS_MANUAL_DIR'] = path
     custom_dataset_file = LabelDataset()
@@ -266,11 +266,11 @@ def buildLabelDataset(version_str="11.0.0", preds_location='/scratch/pdt9929/DL_
 ## Change val_predictions to unlabeled if you want the unlabeled set !!
 ## And val_slot_preds to unlabeled set !!
 def getSlotModel(FLAGS, object_FLAGS
-                 val_folder = '/scratch/pdt9929/DL_Final_Project/dataset/val_predictions/',
-                 slot_checkpoint_path = '/scratch/pdt9929/google-research/slot_attention/weights.ckpt',
-                 object_checkpoint_path = '/scratch/pdt9929/google-research/slot_attention/weights.ckpt',
-                 slot_save_dir = '/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/label_dataset/val_slot_preds.npy',
-                 object_save_dir = '/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/label_dataset/val_object_preds.npy',
+                 val_folder = '/scratch/kmk9461/DL_Final_Project/dataset/val_predictions/',
+                 slot_checkpoint_path = '/scratch/kmk9461/google-research/slot_attention/weights.ckpt',
+                 object_checkpoint_path = '/scratch/kmk9461/google-research/slot_attention/weights.ckpt',
+                 slot_save_dir = '/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/label_dataset/val_slot_preds.npy',
+                 object_save_dir = '/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/label_dataset/val_object_preds.npy',
                  ):
     # Hyperparameters of the model.
     FLAGS(sys.argv)
