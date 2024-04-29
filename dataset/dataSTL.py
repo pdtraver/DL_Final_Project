@@ -50,17 +50,17 @@ def process_folder(folder_path, pre_slen=11, aft_slen=11):
                     broken = True
                 frames.append(image)
                 
-        if np.shape(masks) != (1, 22, 160, 240) and folder_path != 'hidden':
-            broken = True   
+        if np.shape(masks) != (1, 22, 160, 240) and folder_path != 'hidden' and folder_path != 'unlabeled':
+            broken = True
             
         if not broken:
             videos.append(np.stack(frames))
-            if folder_path != 'hidden':
+            if folder_path != 'hidden' and folder_path != 'unlabeled':
                 global_masks.append(np.stack(masks))
         
     # stack video frames from each folder
     video_data = np.stack(videos).transpose(0, 1, 4, 2, 3)
-    if folder_path != 'hidden':
+    if folder_path != 'hidden' and folder_path != 'unlabeled':
         mask_data = np.stack(global_masks).transpose(0, 2, 1, 3, 4)
     else:
         mask_data = None
@@ -71,12 +71,12 @@ def process_folder(folder_path, pre_slen=11, aft_slen=11):
 
     if mask_data is not None:
         return video_data[:, :pre_slen], video_data[:, aft_slen:], mask_data[:, :pre_slen], mask_data[:, aft_slen:]
-    elif folder_path != 'hidden':
+    elif folder_path != 'hidden' and folder_path != 'unlabeled':
         return video_data[:, :pre_slen], video_data[:, aft_slen:], mask_data, mask_data
     else:
         return video_data, None, None, None
 
-folders = ['train', 'val', 'hidden']
+folders = ['unlabeled']
 for folder in tqdm(folders):
     dataset = {}
     data_x, data_y, mask_x, mask_y = process_folder(folder, pre_slen=11, aft_slen=11)
