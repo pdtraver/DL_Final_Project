@@ -25,7 +25,7 @@ def openValSet(directory):
     print('X_val shape: ' + str(np.shape(X_val)))
     print('Y_val shape: ' + str(np.shape(Y_val)))
     print('X_val_mask shape: ' + str(np.shape(X_val_mask)))
-    print('Y_test_mask shape: ' + str(np.shape(X_val_mask)))
+    print('Y_val_mask shape: ' + str(np.shape(Y_val_mask)))
     
     return X_val, Y_val, X_val_mask, Y_val_mask
 
@@ -407,34 +407,122 @@ def process_targets(target):
     real_obj = target[18]
     return coords, object_size, material, shape, color, real_obj
 
+def getClassDict():
+    code_characteristics = { 1:{'shape':'cube', 'material':'metal', 'color': 'gray', 'size': 'small'},
+                         2:{'shape':'cube', 'material':'metal', 'color': 'red', 'size': 'small'},
+                         3:{'shape':'cube', 'material':'metal', 'color': 'blue', 'size': 'small'},
+                         4:{'shape':'cube', 'material':'metal', 'color': 'green', 'size': 'small'}, 
+                         5:{'shape':'cube', 'material':'metal', 'color': 'brown', 'size': 'small'}, 
+                         6:{'shape':'cube', 'material':'metal', 'color': 'cyan', 'size': 'small'},
+                         7:{'shape':'cube', 'material':'metal', 'color': 'purple', 'size': 'small'},
+                         8:{'shape':'cube', 'material':'metal', 'color': 'yellow', 'size': 'small'},
+                         9:{'shape':'cube', 'material':'rubber', 'color': 'gray', 'size': 'small'},
+                        10:{'shape':'cube', 'material':'rubber', 'color': 'red', 'size': 'small'},
+                        11:{'shape':'cube', 'material':'rubber', 'color': 'blue', 'size': 'small'},
+                        12:{'shape':'cube', 'material':'rubber', 'color': 'green', 'size': 'small'}, 
+                        13:{'shape':'cube', 'material':'rubber', 'color': 'brown', 'size': 'small'}, 
+                        14:{'shape':'cube', 'material':'rubber', 'color': 'cyan', 'size': 'small'},
+                        15:{'shape':'cube', 'material':'rubber', 'color': 'purple', 'size': 'small'},
+                        16:{'shape':'cube', 'material':'rubber', 'color': 'yellow', 'size': 'small'}, 
+                        17:{'shape':'sphere', 'material':'metal', 'color': 'gray', 'size': 'small'},
+                        18:{'shape':'sphere', 'material':'metal', 'color': 'red', 'size': 'small'},
+                        19:{'shape':'sphere', 'material':'metal', 'color': 'blue', 'size': 'small'},
+                        20:{'shape':'sphere', 'material':'metal', 'color': 'green', 'size': 'small'}, 
+                        21:{'shape':'sphere', 'material':'metal', 'color': 'brown', 'size': 'small'}, 
+                        22:{'shape':'sphere', 'material':'metal', 'color': 'cyan', 'size': 'small'},
+                        23:{'shape':'sphere', 'material':'metal', 'color': 'purple', 'size': 'small'},
+                        24:{'shape':'sphere', 'material':'metal', 'color': 'yellow', 'size': 'small'},
+                        25:{'shape':'sphere', 'material':'rubber', 'color': 'gray', 'size': 'small'},
+                        26:{'shape':'sphere', 'material':'rubber', 'color': 'red', 'size': 'small'},
+                        27:{'shape':'sphere', 'material':'rubber', 'color': 'blue', 'size': 'small'},
+                        28:{'shape':'sphere', 'material':'rubber', 'color': 'green', 'size': 'small'}, 
+                        29:{'shape':'sphere', 'material':'rubber', 'color': 'brown', 'size': 'small'}, 
+                        30:{'shape':'sphere', 'material':'rubber', 'color': 'cyan', 'size': 'small'},
+                        31:{'shape':'sphere', 'material':'rubber', 'color': 'purple', 'size': 'small'},
+                        32:{'shape':'sphere', 'material':'rubber', 'color': 'yellow', 'size': 'small'}, 
+                        33:{'shape':'cylinder', 'material':'metal', 'color': 'gray', 'size': 'small'},
+                        34:{'shape':'cylinder', 'material':'metal', 'color': 'red', 'size': 'small'},
+                        35:{'shape':'cylinder', 'material':'metal', 'color': 'blue', 'size': 'small'},
+                        36:{'shape':'cylinder', 'material':'metal', 'color': 'green', 'size': 'small'}, 
+                        37:{'shape':'cylinder', 'material':'metal', 'color': 'brown', 'size': 'small'}, 
+                        38:{'shape':'cylinder', 'material':'metal', 'color': 'cyan', 'size': 'small'},
+                        39:{'shape':'cylinder', 'material':'metal', 'color': 'purple', 'size': 'small'},
+                        40:{'shape':'cylinder', 'material':'metal', 'color': 'yellow', 'size': 'small'},
+                        41:{'shape':'cylinder', 'material':'rubber', 'color': 'gray', 'size': 'small'},
+                        42:{'shape':'cylinder', 'material':'rubber', 'color': 'red', 'size': 'small'},
+                        43:{'shape':'cylinder', 'material':'rubber', 'color': 'blue', 'size': 'small'},
+                        44:{'shape':'cylinder', 'material':'rubber', 'color': 'green', 'size': 'small'}, 
+                        45:{'shape':'cylinder', 'material':'rubber', 'color': 'brown', 'size': 'small'}, 
+                        46:{'shape':'cylinder', 'material':'rubber', 'color': 'cyan', 'size': 'small'},
+                        47:{'shape':'cylinder', 'material':'rubber', 'color': 'purple', 'size': 'small'},
+                        48:{'shape':'cylinder', 'material':'rubber', 'color': 'yellow', 'size': 'small'},
+                        }
+    return code_characteristics
+
+def getLabelAndColor(class_dict, object_size, material, shape, color):
+    shapes = ['cube', 'sphere', 'cylinder']
+    materials = ['metal', 'rubber']
+    colors = ['gray', 'red', 'blue', 'green', 'brown', 'cyan', 'purple', 'yellow']
+    sizes = ['small']
+    
+    value = {
+        'shape': shapes[shape], 
+        'material': materials[material], 
+        'color': colors[color], 
+        'size': sizes[0]
+    }
+    
+    key_list = list(class_dict.keys())
+    value_list = list(class_dict.values())
+    
+    return key_list[value_list.index(value)], colors[color]
+
 ## Transform predicted masks back to normal configuration
-def generateMasks(slot_predictions):
+def generateMasks(slot_predictions, class_dict):
     camera_params, rotation_matrix = get_camera_params()
     
     for filename in slot_predictions:
         image = cv2.imread(filename.decode('UTF-8'))
         slots = slot_predictions[filename][0]
         
-        #Abhisek's masking protocol
+        #Masking protocol
         color_mask = ColorMasker(image)
         
         color_masks = {}
         for color in color_mask.color_ranges.keys():
             color_masks[color] = color_mask.get_mask(color)
-            print(color_masks[color])
-            
 
+        masks_to_sum = []
         for slot in slots:
             coords, object_size, material, shape, color, real_obj = process_targets(slot)
             
+            coords = tf.get_static_value(coords)*6 - 3 #convert to [0,6] range
+            object_size = tf.get_static_value(object_size)
+            material = tf.get_static_value(material)
+            shape = tf.get_static_value(shape)
+            color = tf.get_static_value(color)
+            real_obj = tf.get_static_value(real_obj)
+            
             pixel_center = world_to_pixel(coords, camera_params, rotation_matrix)
             
-
-        
-        
-
-
+            # threshold for matching
+            real_obj_thresh = .75
+            
+            # switch table for matching slots to mask
+            if real_obj > real_obj_thresh:
+                correct_label, color_str = getLabelAndColor(class_dict, object_size, material, shape, color)
+                mask_proposals = color_masks[color_str]
+                for proposal in mask_proposals:
+                    if proposal[pixel_center] == 1:
+                        print('this is hit')
+                        pixels_to_fill = proposal == 1
+                        proposal[pixels_to_fill] = correct_label
+                        masks_to_sum.append(proposal)
+            
 ## Measure Jacard distance using provided code
+def computeJaccard(predictions, ground_truth):
+    jaccard = torchmetrics.JaccardIndex(task="multiclass", num_classes=49)
+    return jaccard(predictions, ground_truth)
 
 ## Main
 def main(build_label_set=True):
@@ -453,10 +541,16 @@ def main(build_label_set=True):
     slot_predictions = getSlotModel(FLAGS)
     print('>'*35 + ' Slots Predicted ' + '<'*35)
     
+    # Get code dictionary
+    class_dict = getClassDict()
+    print('>'*35 + ' Class Dict Loaded ' + '<'*35)
+    
     # Generate masks from slots
     print('>'*35 + ' Generating Masks for Last Frame ' + '<'*35)
-    slot_predictions = generateMasks(slot_predictions)
+    mask_predictions = generateMasks(slot_predictions, class_dict)
     print('>'*35 + ' Masks Generated ' + '<'*35)
+    
+    X_val, Y_val, X_val_mask, Y_val_mask = openValSet("dataset/")
 
 if __name__ == "__main__":
     main(build_label_set=True)
