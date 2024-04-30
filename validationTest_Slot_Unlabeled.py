@@ -535,17 +535,24 @@ def getLabelAndColor(class_dict, object_size, material, shape, color):
     colors = ['gray', 'red', 'blue', 'green', 'brown', 'cyan', 'purple', 'yellow']
     sizes = ['small']
     
-    value = {
+    value_to_find = {
         'shape': shapes[shape], 
         'material': materials[material], 
         'color': colors[color], 
-        'size': sizes[0]
+        'size': sizes[object_size]
     }
     
-    key_list = list(class_dict.keys())
-    value_list = list(class_dict.values())
+    # key_list = list(class_dict.keys())
+    # value_list = list(class_dict.values())
     
-    return key_list[value_list.index(value)], colors[color]
+    # return key_list[value_list.index(value)], colors[color]
+    
+    for key, value in class_dict.items():
+        if (value['shape'] == value_to_find['shape'] and
+            value['material'] == value_to_find['material'] and
+            value['color'] == value_to_find['color'] and
+            value['size'] == value_to_find['size']):
+            return key  # Return the class label
 
 ## Transform predicted masks back to normal configuration
 def generateMasks(slot_predictions, class_dict):

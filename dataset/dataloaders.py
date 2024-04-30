@@ -1,6 +1,9 @@
 import torch
 from torch.utils.data import Dataset
 from dataset.openData import open_data
+from dataset.maskTransformations import convert_to_multi_hot, convert_from_multi_hot
+import numpy as np
+import os
 
 class CustomDataset(Dataset):
     def __init__(self, X, Y, normalize=False, data_name='custom'):
@@ -38,11 +41,38 @@ def getDataloaders(directory):
     print('HERE')
     print(X_train_mask.shape)
     print(Y_train_mask.shape)
+    print(X_val_mask.shape)
+    print(Y_val_mask.shape)
+    print(type(X_train_mask))
+    
+    # Transform mask data if necessary
+    if os.path.isfile('/scratch/pdt9929/DL_Final_Project/dataset/transformed_masks.npz'):
+        outfile = np.load('/scratch/pdt9929/DL_Final_Project/dataset/transformed_masks.npz')
+        X_train_mask = outfile['X_train_mask']
+        Y_train_mask = outfile['Y_train_mask']
+        X_val_mask = outfile['X_val_mask']
+        Y_val_mask = outfile['Y_val_mask']
+        outfile.close()
+    else:
+        X_train_mask = convert_to_multi_hot(X_train_mask)
+        Y_train_mask = convert_to_multi_hot(Y_train_mask)
+        X_val_mask = convert_to_multi_hot(X_val_mask)
+        Y_val_mask = convert_to_multi_hot(Y_val_mask)
+        
+        with open('/scratch/pdt9929/DL_Final_Project/dataset/transformed_masks.npz', 'wb') as f:
+            np.savez(f, X_train_mask = X_train_mask, Y_train_mask= Y_train_mask, X_val_mask = X_val_mask, Y_val_mask = Y_val_mask)
+        
+    print('TRANSFORMED')
+    print(X_train_mask.shape)
+    print(Y_train_mask.shape)
+    print(X_val_mask.shape)
+    print(Y_val_mask.shape)
+    
     train_set_mask = CustomDataset(X=X_train_mask, Y=Y_train_mask)
-    val_set = CustomDataset(X=X_val, Y=Y_val)
-    val_set_mask = CustomDataset(X=X_val_mask, Y=Y_val_mask)
-    test_set = CustomDataset(X=X_val, Y=Y_val)
-    test_set_mask = CustomDataset(X=X_val_mask, Y=Y_val_mask)
+    val_set = CustomDataset(X=X_val[:499], Y=Y_val[:499])
+    val_set_mask = CustomDataset(X=X_val_mask[:499], Y=Y_val_mask[:499])
+    test_set = CustomDataset(X=X_val[499:], Y=Y_val[499:])
+    test_set_mask = CustomDataset(X=X_val_mask[499:], Y=Y_val_mask[499:])
 
     dataloader_train = torch.utils.data.DataLoader(
         train_set, batch_size=batch_size, shuffle=True, pin_memory=True)

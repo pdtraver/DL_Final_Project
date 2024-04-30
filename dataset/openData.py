@@ -21,8 +21,8 @@ def open_data(directory):
     print('Y_test shape: ' + str(np.shape(Y_val[499:])))
     print('X_val_mask shape: ' + str(np.shape(X_val_mask[:499])))
     print('X_test_mask shape: ' + str(np.shape(X_val_mask[499:])))
-    print('Y_val_mask shape: ' + str(np.shape(X_val_mask[:499])))
-    print('Y_test_mask shape: ' + str(np.shape(X_val_mask[499:])))
+    print('Y_val_mask shape: ' + str(np.shape(Y_val_mask[:499])))
+    print('Y_test_mask shape: ' + str(np.shape(Y_val_mask[499:])))
         
     with open(directory + 'hidden.pkl', 'rb') as f:
         X_hidden = pickle.load(f)['X_hidden']

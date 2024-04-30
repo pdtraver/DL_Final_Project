@@ -562,10 +562,10 @@ def generateMasks(set_predictions, object_predictions, class_dict):
         ## recon_combined - 160x240x3; recon - 10x160x240x3; mask - 10x160x240x1; slots - 10x64
         recon_combined, recon, masks, slots = objects['recon_combined'], objects['recon'], objects['mask'], objects['slots']
         
-        # test_image = {'image': image, 'sets': sets, 'objects': objects}
+        test_image = {'image': image, 'sets': sets, 'objects': objects}
         
-        # with open('/scratch/pdt9929/test_image.npy', 'wb') as f:
-        #     np.save(f, test_image)
+        with open('/scratch/pdt9929/test_image.npy', 'wb') as f:
+            np.save(f, test_image)
         
         binary_masks = []
         # Get binary masks from alpha mask
