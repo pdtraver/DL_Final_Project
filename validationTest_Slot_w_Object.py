@@ -16,6 +16,8 @@ from google_research.slot_attention import utils
 from PIL import Image
 from math import tan, pi, cos, sin
 import cv2
+import torchmetrics
+import torch
 
 ## Load validation set
 def openValSet(directory):
@@ -36,10 +38,10 @@ def getSetFlags(batch_size = 512):
     FLAGS = flags.FLAGS
     ## UNCOMMENT FOR CORRECT FILE LOCATION
     if model_type == 'object':
-        flags.DEFINE_string("model_dir", "/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/object_discovery/",
+        flags.DEFINE_string("model_dir", "/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/object_discovery/",
                             "Where to save the checkpoints.")
     elif model_type == 'set':
-        flags.DEFINE_string("model_dir", "/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/set_prediction/",
+        flags.DEFINE_string("model_dir", "/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/set_prediction/",
                             "Where to save the checkpoints.")
     flags.DEFINE_integer("seed", 0, "Random seed.")
     flags.DEFINE_integer("batch_size", batch_size, "Batch size for the model.")
@@ -61,10 +63,10 @@ def getObjectFlags(batch_size = 32):
     FLAGS = flags.FLAGS
     ## UNCOMMENT FOR CORRECT FILE LOCATION
     if model_type == 'object':
-        flags.DEFINE_string("model_dir", "/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/object_discovery/",
+        flags.DEFINE_string("model_dir", "/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/object_discovery/",
                             "Where to save the checkpoints.")
     elif model_type == 'set':
-        flags.DEFINE_string("model_dir", "/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/set_prediction/",
+        flags.DEFINE_string("model_dir", "/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/set_prediction/",
                             "Where to save the checkpoints.")
     flags.DEFINE_integer("seed", 0, "Random seed.")
     flags.DEFINE_integer("batch_size", batch_size, "Batch size for the model.")
@@ -81,7 +83,7 @@ def getObjectFlags(batch_size = 32):
     return FLAGS
    
 ## Generate Slot Data Iterator
-def buildLabelDataset(version_str="11.0.0", preds_location='/scratch/kmk9461/DL_Final_Project/dataset/val_predictions/'):
+def buildLabelDataset(version_str="11.0.0", preds_location='/scratch/pdt9929/DL_Final_Project/dataset/val_predictions/'):
     class LabelDataset(tfds.core.GeneratorBasedBuilder):
         VERSION = tfds.core.Version(version_str)
         RELEASE_NOTES = {version_str : "Val preds release."}
@@ -256,7 +258,7 @@ def buildLabelDataset(version_str="11.0.0", preds_location='/scratch/kmk9461/DL_
             return dataset_info
         
     # Generate label dataset
-    path = '/scratch/kmk9461/DL_Final_Project/google_research/slot_attention/'
+    path = '/scratch/pdt9929/DL_Final_Project/google_research/slot_attention/'
     os.environ['TFDS_DATA_DIR'] = path
     os.environ['TFDS_MANUAL_DIR'] = path
     custom_dataset_file = LabelDataset()
@@ -292,7 +294,22 @@ def getSetPreds(FLAGS,
     slot_model = model_utils.build_model(resolution, batch_size, num_slots,
                                     num_iterations, model_type="set_prediction")
     
-    slot_model.load_weights(slot_checkpoint_path)
+    #slot_model.load_weights(slot_checkpoint_path)
+    
+    # Dummy optmizer so checkpoint manager works
+    optimizer = tf.keras.optimizers.Adam(base_learning_rate, epsilon=1e-08)
+    
+    global_step = tf.Variable(
+      0, trainable=False, name="global_step", dtype=tf.int64)
+    ckpt = tf.train.Checkpoint(
+        network=slot_model, optimizer=optimizer, global_step=global_step)
+    ckpt_manager = tf.train.CheckpointManager(
+        checkpoint=ckpt, directory=FLAGS.model_dir, max_to_keep=5)
+    ckpt.restore(ckpt_manager.latest_checkpoint)
+    if ckpt_manager.latest_checkpoint:
+        print("Restored from %s", ckpt_manager.latest_checkpoint)
+    else:
+        print("Initializing from scratch.")
     
     slot_predictions = {}
     
@@ -336,7 +353,22 @@ def getObjectPreds(FLAGS,
     object_model = model_utils.build_model(resolution, batch_size, num_slots,
                                     num_iterations, model_type="object_discovery")
 
-    object_model.load_weights(object_checkpoint_path)
+    #object_model.load_weights(object_checkpoint_path)
+    
+    # Dummy optmizer so checkpoint manager works
+    optimizer = tf.keras.optimizers.Adam(base_learning_rate, epsilon=1e-08)
+    
+    global_step = tf.Variable(
+      0, trainable=False, name="global_step", dtype=tf.int64)
+    ckpt = tf.train.Checkpoint(
+        network=object_model, optimizer=optimizer, global_step=global_step)
+    ckpt_manager = tf.train.CheckpointManager(
+        checkpoint=ckpt, directory=FLAGS.model_dir, max_to_keep=5)
+    ckpt.restore(ckpt_manager.latest_checkpoint)
+    if ckpt_manager.latest_checkpoint:
+        print("Restored from %s", ckpt_manager.latest_checkpoint)
+    else:
+        print("Initializing from scratch.")
 
     object_predictions = {}
 
@@ -439,26 +471,113 @@ def getLabelAndColor(class_dict, object_size, material, shape, color):
     
     return key_list[value_list.index(value)], colors[color]
 
+def get_camera_params():
+    camera_params = {
+        'fov': 49.9,  # Field of view in degrees
+        'camera_position': [3, 3, 6],  # Camera position (x, y, z)
+        'camera_rotation': [-25, 25, 0],  # Camera rotation in degrees (pitch, roll, yaw)
+        'camera_sensor_width': 36,  # Camera sensor width in mm
+        'camera_sensor_height': 24,  # Camera sensor height in mm
+        'image_resolution': [320, 240]  # Image resolution (width, height)
+    }
+    
+    # Calculate the camera rotation matrix
+    pitch = camera_params['camera_rotation'][0] * np.pi / 180
+    roll = camera_params['camera_rotation'][1] * np.pi / 180
+    yaw = camera_params['camera_rotation'][2] * np.pi / 180
+
+    rotation_matrix = np.array([
+        [np.cos(yaw) * np.cos(pitch), np.cos(yaw) * np.sin(pitch) * np.sin(roll) - np.sin(yaw) * np.cos(roll), np.cos(yaw) * np.sin(pitch) * np.cos(roll) + np.sin(yaw) * np.sin(roll)],
+        [np.sin(yaw) * np.cos(pitch), np.sin(yaw) * np.sin(pitch) * np.sin(roll) + np.cos(yaw) * np.cos(roll), np.sin(yaw) * np.sin(pitch) * np.cos(roll) - np.cos(yaw) * np.sin(roll)],
+        [-np.sin(pitch), np.cos(pitch) * np.sin(roll), np.cos(pitch) * np.cos(roll)]
+    ])
+    
+    return camera_params, rotation_matrix
+
+def world_to_pixel(world_coords, camera_params, rotation_matrix):
+    # Extract camera parameters
+    camera_position = np.array(camera_params['camera_position'])
+    fov = camera_params['fov']
+    width, height = camera_params['image_resolution']
+    pixel_width = camera_params['camera_sensor_width'] / width
+    pixel_height = camera_params['camera_sensor_height'] / height
+
+    # Calculate the direction vector from the camera position to the 3D point
+    direction = (world_coords - camera_position).astype(np.float64)
+
+    # Normalize the direction vector
+    direction /= np.linalg.norm(direction)
+
+    # Apply the inverse rotation matrix to align with the camera's view
+    inv_rotation_matrix = np.linalg.inv(rotation_matrix)
+    direction = np.dot(inv_rotation_matrix, direction)
+
+    # Project the 3D point onto the 2D image plane
+    # Assuming the camera is looking along the z-axis, ignore the z-component
+    u = direction[0] * fov / 2
+    v = direction[1] * fov / 2
+
+    # Convert from camera coordinates to pixel indices
+    x_index = int((u / pixel_width) + width / 2)
+    y_index = int((v / pixel_height) + height / 2)
+
+    return x_index, y_index
+
+def world_to_pixel2(world_coords, camera_params, rotation_matrix):
+    camera_position = np.array(camera_params['camera_position'])
+    fov = camera_params['fov']
+    width, height = camera_params['image_resolution']
+    pixel_width = camera_params['camera_sensor_width'] / width
+    pixel_height = camera_params['camera_sensor_height'] / height
+
+    # Vector from camera to point in world coordinates
+    direction = (world_coords - camera_position).astype(np.float64)
+
+    # Apply the inverse rotation to get the direction in camera coordinates
+    inv_rotation_matrix = np.linalg.inv(rotation_matrix)
+    camera_coords = np.dot(inv_rotation_matrix, direction)
+
+    # Perspective projection
+    # Assuming the camera's z-axis is the viewing direction
+    z = camera_coords[2]
+    u = (camera_coords[0] / z) * (fov / 2)  # Projecting x
+    v = (camera_coords[1] / z) * (fov / 2)  # Projecting y
+
+    # Convert from camera coordinates to pixel indices
+    x_index = int((u / pixel_width) + width / 2)
+    y_index = int((v / pixel_height) + height / 2)
+
+    return x_index, y_index
+
 ## Transform predicted masks back to normal configuration
-def generateMasks(slot_predictions, object_predictions, class_dict):
+def generateMasks(set_predictions, object_predictions, class_dict):
     camera_params, rotation_matrix = get_camera_params()
     
-    for filename in slot_predictions:
+    final_masks = {}
+    for filename in tqdm(set_predictions, leave=False):
         image = cv2.imread(filename.decode('UTF-8'))
-        slots = slot_predictions[filename][0]
+        # 10x19 -- slots x characteristics
+        sets = set_predictions[filename][0]
+        objects = object_predictions[filename]
+        ## recon_combined - 160x240x3; recon - 10x160x240x3; mask - 10x160x240x1; slots - 10x64
+        recon_combined, recon, masks, slots = objects['recon_combined'], objects['recon'], objects['mask'], objects['slots']
         
-        #Masking protocol
-        color_mask = ColorMasker(image)
+        # test_image = {'image': image, 'sets': sets, 'objects': objects}
         
-        color_masks = {}
-        for color in color_mask.color_ranges.keys():
-            color_masks[color] = color_mask.get_mask(color)
+        # with open('/scratch/pdt9929/test_image.npy', 'wb') as f:
+        #     np.save(f, test_image)
+        
+        binary_masks = []
+        # Get binary masks from alpha mask
+        for mask in masks:
+            threshold, bin_mask = cv2.threshold(tf.get_static_value(mask), 0.25, 1, cv2.THRESH_BINARY)
+            binary_masks.append(bin_mask)
 
-        masks_to_sum = []
-        for slot in slots:
+        summed_mask = np.zeros((160,240))
+        for slot in sets:
             coords, object_size, material, shape, color, real_obj = process_targets(slot)
             
-            coords = tf.get_static_value(coords)*6 - 3 #convert to [0,6] range
+            coords = tf.get_static_value(coords)*6-3 #convert to [-3,3] range
             object_size = tf.get_static_value(object_size)
             material = tf.get_static_value(material)
             shape = tf.get_static_value(shape)
@@ -466,46 +585,27 @@ def generateMasks(slot_predictions, object_predictions, class_dict):
             real_obj = tf.get_static_value(real_obj)
             
             pixel_center = world_to_pixel(coords, camera_params, rotation_matrix)
-            
             # threshold for matching
             real_obj_thresh = .75
             
             # switch table for matching slots to mask
             if real_obj > real_obj_thresh:
                 correct_label, color_str = getLabelAndColor(class_dict, object_size, material, shape, color)
-                mask_proposals = color_masks[color_str]
-                for proposal in mask_proposals:
+                for proposal in binary_masks:
                     if proposal[pixel_center] == 1:
-                        print('this is hit')
+                        #print('this is hit')
                         pixels_to_fill = proposal == 1
                         proposal[pixels_to_fill] = correct_label
-                        masks_to_sum.append(proposal)
-            
+                        summed_mask = np.where(summed_mask, summed_mask, proposal)
+        
+        final_masks[filename] = summed_mask
+    
+    return final_masks
+
 ## Measure Jacard distance using provided code
 def computeJaccard(predictions, ground_truth):
     jaccard = torchmetrics.JaccardIndex(task="multiclass", num_classes=49)
     return jaccard(predictions, ground_truth)
-
-# Calculate the Jaccard distance between two binary masks.
-def jaccard_distance(mask1, mask2):
-    intersection = np.logical_and(mask1, mask2)
-    union = np.logical_or(mask1, mask2)
-    jaccard_index = np.sum(intersection) / np.sum(union)
-    jaccard_dist = 1 - jaccard_index
-    return jaccard_dist
-
-# Calculate the Jaccard distance between two binary masks or batches of masks.
-def jaccard_distance_tensorflow(mask1, mask2):
-    intersection = tf.math.logical_and(mask1, mask2)
-    union = tf.math.logical_or(mask1, mask2)
-
-    intersection_sum = tf.math.reduce_sum(tf.cast(intersection, tf.float32), axis=[1, 2, 3])
-    union_sum = tf.math.reduce_sum(tf.cast(union, tf.float32), axis=[1, 2, 3])
-
-    jaccard_index = tf.math.divide_no_nan(intersection_sum, union_sum)
-    jaccard_dist = 1.0 - jaccard_index
-
-    return jaccard_dist
 
 ## Main
 def main(build_label_set=True):
@@ -526,7 +626,7 @@ def main(build_label_set=True):
     
     # Predict slots
     print('>'*35 + ' Predicting Sets for Last Frame ' + '<'*35)
-    slot_predictions = getSetPreds(FLAGS)
+    set_predictions = getSetPreds(FLAGS)
     print('>'*35 + ' Sets Predicted ' + '<'*35)
     
     def del_all_flags(FLAGS):
@@ -540,7 +640,7 @@ def main(build_label_set=True):
     # get slot flags, build label dataset & predict masks
     FLAGS = getObjectFlags()
     #object_FLAGS = getObjectFlags()
-    print('>'*35 + 'Object Flags Loaded ' + '<'*35)
+    print('>'*35 + ' Object Flags Loaded ' + '<'*35)
         
     # Predict slots
     print('>'*35 + ' Predicting Objects for Last Frame ' + '<'*35)
@@ -549,10 +649,27 @@ def main(build_label_set=True):
     
     # Generate masks from slots
     print('>'*35 + ' Generating Masks for Last Frame ' + '<'*35)
-    mask_predictions = generateMasks(slot_predictions, object_predictions, class_dict)
+    mask_predictions = generateMasks(set_predictions, object_predictions, class_dict)
     print('>'*35 + ' Masks Generated ' + '<'*35)
     
+    print('>'*35 + ' Loading Val Ground Truth ' + '<'*35)
     X_val, Y_val, X_val_mask, Y_val_mask = openValSet("dataset/")
+    ground_truth = torch.tensor(Y_val_mask[:,10].transpose(0, 2, 3, 1)).squeeze(3)
+    print('ground truth shape: ' + str(ground_truth.shape))
+    print('>'*35 + ' Ground Truth Loaded ' + '<'*35)
+    
+    print('>'*35 + ' Preparing final predictions ' + '<'*35)
+    mask_keys = list(mask_predictions.keys())
+    mask_keys.sort()
+    final_prediction = torch.tensor(np.zeros((1, 160, 240)))
+    for key in tqdm(mask_keys, leave=False):
+        final_prediction = torch.cat((final_prediction, torch.tensor(mask_predictions[key]).unsqueeze(0)), axis=0)
+        
+    final_prediction = final_prediction[1:]
+    
+    print('>'*35 + ' Calculating Jaccard distance ' + '<'*35)
+    accuracy = computeJaccard(final_prediction, ground_truth)
+    print(accuracy)
 
 if __name__ == "__main__":
     main(build_label_set=True)
