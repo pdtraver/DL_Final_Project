@@ -47,10 +47,12 @@ def process_folder(folder_path, pre_slen=11, aft_slen=11):
             else:
                 image = cv2.imread(os.path.join(video_path, frame))
                 if image is None:
+                    print(video_path)
                     broken = True
                 frames.append(image)
                 
         if np.shape(masks) != (1, 22, 160, 240) and folder_path != 'hidden' and folder_path != 'unlabeled':
+            print(video_path)
             broken = True
             
         if not broken:
@@ -76,14 +78,14 @@ def process_folder(folder_path, pre_slen=11, aft_slen=11):
     else:
         return video_data, None, None, None
 
-folders = ['unlabeled']
+folders = ['val']
 for folder in tqdm(folders):
     dataset = {}
     data_x, data_y, mask_x, mask_y = process_folder(folder, pre_slen=11, aft_slen=11)
     print(np.shape(data_x), np.shape(data_y), np.shape(mask_x), np.shape(mask_y))
     dataset['X_' + folder], dataset['Y_' + folder],  dataset['X_' + folder + '_mask'], dataset['Y_' + folder + '_mask'] = data_x, data_y, mask_x, mask_y
-    with open(folder + '.pkl', 'wb') as f:
-        pickle.dump(dataset, f)
+    # with open(folder + '.pkl', 'wb') as f:
+    #     pickle.dump(dataset, f)
 
 # the shape is B x T x C x H x W
 # B: the number of samples

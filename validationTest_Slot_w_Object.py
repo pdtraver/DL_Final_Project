@@ -570,7 +570,7 @@ def generateMasks(set_predictions, object_predictions, class_dict):
         binary_masks = []
         # Get binary masks from alpha mask
         for mask in masks:
-            threshold, bin_mask = cv2.threshold(tf.get_static_value(mask), 0.25, 1, cv2.THRESH_BINARY)
+            threshold, bin_mask = cv2.threshold(tf.get_static_value(mask), 0.5, 1, cv2.THRESH_BINARY)
             binary_masks.append(bin_mask)
 
         summed_mask = np.zeros((160,240))

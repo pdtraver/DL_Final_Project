@@ -46,8 +46,8 @@ def getDataloaders(directory):
     print(type(X_train_mask))
     
     # Transform mask data if necessary
-    if os.path.isfile('/scratch/pdt9929/DL_Final_Project/dataset/transformed_masks.npz'):
-        outfile = np.load('/scratch/pdt9929/DL_Final_Project/dataset/transformed_masks.npz')
+    if os.path.isfile('/scratch/pdt9929/DL_Final_Project/dataset/transformed_masks_w_background.npz'):
+        outfile = np.load('/scratch/pdt9929/DL_Final_Project/dataset/transformed_masks_w_background.npz')
         X_train_mask = outfile['X_train_mask']
         Y_train_mask = outfile['Y_train_mask']
         X_val_mask = outfile['X_val_mask']
@@ -59,7 +59,7 @@ def getDataloaders(directory):
         X_val_mask = convert_to_multi_hot(X_val_mask)
         Y_val_mask = convert_to_multi_hot(Y_val_mask)
         
-        with open('/scratch/pdt9929/DL_Final_Project/dataset/transformed_masks.npz', 'wb') as f:
+        with open('/scratch/pdt9929/DL_Final_Project/dataset/transformed_masks_w_background.npz', 'wb') as f:
             np.savez(f, X_train_mask = X_train_mask, Y_train_mask= Y_train_mask, X_val_mask = X_val_mask, Y_val_mask = Y_val_mask)
         
     print('TRANSFORMED')
@@ -67,6 +67,10 @@ def getDataloaders(directory):
     print(Y_train_mask.shape)
     print(X_val_mask.shape)
     print(Y_val_mask.shape)
+    print(type(X_train_mask))
+    
+    print(X_val[:499].shape)
+    print(type(X_val[:499]))
     
     train_set_mask = CustomDataset(X=X_train_mask, Y=Y_train_mask)
     val_set = CustomDataset(X=X_val[:499], Y=Y_val[:499])

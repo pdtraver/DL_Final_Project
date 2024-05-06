@@ -1,7 +1,7 @@
 custom_training_config = {
     'pre_seq_length': 11,
     'aft_seq_length': 11,
-    'total_length': 22,
+    'total_length': 2,
     'batch_size': 16,
     'val_batch_size': 16,
     'epoch': 100,
@@ -31,16 +31,16 @@ custom_model_config = {
 custom_training_config_mask = {
     'pre_seq_length': 11,
     'aft_seq_length': 11,
-    'total_length': 22,
-    'batch_size': 1,
-    'val_batch_size': 1,
+    'total_length': 2,
+    'batch_size': 16,
+    'val_batch_size': 16,
     'epoch': 100,
     'lr': 0.001,   
     'metrics': ['mse', 'mae'],
     
     'ex_name': 'mask_exp',
     'dataname': 'masks',
-    'in_shape': [11, 13, 160, 240],
+    'in_shape': [11, 14, 160, 240],
 }
 
 custom_model_config_mask = {

@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import os
 from tqdm import tqdm
-from dataset.generateImages import generateImages
+#from dataset.generateImages import generateImages
         
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
@@ -83,4 +83,4 @@ with open('dataset/hidden_predictions_masks2.npy', 'wb') as f:
     np.save(f, hidden_predictions2)
     
 # Create images from predictions
-generateImages(hidden_predictions, hidden_predictions2)
+#generateImages(hidden_predictions, hidden_predictions2)
