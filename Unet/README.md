@@ -1,6 +1,6 @@
 # UNet Model for Semantic Segmentation on CLEVR Dataset
 
-This documentation covers a PyTorch implementation of the UNet model for semantic segmentation, tailored for the CLEVR dataset. The CLEVR dataset comprises synthetic images of complex scenes with multiple objects, each associated with a unique mask, facilitating the segmentation of individual objects. This implementation encompasses data loading, model definition, training, inference, and saving mechanisms.
+This documentation covers a PyTorch implementation of the UNet model for semantic segmentation, tailored for the CLEVR dataset. The CLEVR dataset comprises synthetic images of complex scenes with multiple objects, each associated with a unique mask, facilitating the segmentation of individual objects. This implementation encompasses data loading, model definition, training, inference, and saving mechanisms. This document describes the file `TrainUnet.ipynb`, `PredictUnlabeledUnet.ipynb` and `Convert hidden.ipynb`
 
 ## Requirements
 
