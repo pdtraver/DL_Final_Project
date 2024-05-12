@@ -54,7 +54,7 @@ The UNet model implemented here is designed for semantic segmentation tasks. It 
 
 ## Running the Code
 
-To execute the script, ensure that your dataset is correctly placed and the model checkpoint is accessible. Run the script using a Python interpreter. Adjust the paths and parameters as necessary based on your setup.
+To execute the script, ensure that your dataset is correctly placed and the model checkpoint is accessible. Run the script using a Python interpreter. Adjust the paths and parameters as necessary based on your setup. Here the batch size is set to 22 because for a single folder, there are 22 files. This makes it easy to save the mask into the right folder
 
 ## Note
 
